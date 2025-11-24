@@ -8,7 +8,7 @@ export default function CategoryFilter({ categories = [], value = 'All', onChang
 
   return (
     <div className="filter">
-      <label htmlFor="category" style={{ color: 'white' }}>Filter by category:</label>
+      <label htmlFor="category" style={{ color: 'white' }}>Filter:</label>
       <select
         id="category"
         value={value ?? 'All'}

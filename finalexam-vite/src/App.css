@@ -601,3 +601,83 @@ button[disabled] {
 .card.out-of-stock .muted {
   color: #ffb4b4;
 }
+
+/* Toast notification (if not already present) */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  min-width: 200px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: #0b0b0b;
+  font-weight: 700;
+  z-index: 1200;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  transform-origin: top right;
+  animation: toast-in 220ms ease;
+}
+.toast-success {
+  background: linear-gradient(180deg, #fef3d7 0%, #fde68a 100%);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Checkout button (if not already present) */
+.btn-checkout {
+  background: linear-gradient(180deg, #f6c84c 0%, #e6b33a 100%);
+  color: #1b1b1b;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 6px 18px rgba(230, 179, 58, 0.12);
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+.btn-checkout:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.btn-checkout:hover:not(:disabled) { transform: translateY(-1px); }
+
+/* Toast animation: fade in, hold, fade out */
+@keyframes toast-fade {
+  0%   { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  10%  { opacity: 1; transform: translateY(0) scale(1); }
+  85%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-6px) scale(0.98); }
+}
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  min-width: 220px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: #0b0b0b;
+  font-weight: 700;
+  z-index: 1200;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  transform-origin: top right;
+}
+
+/* Visual style for success toast */
+.toast-success {
+  background: linear-gradient(180deg, #fef3d7 0%, #fde68a 100%);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+/* Apply the fade in/out animation */
+.toast-animate {
+  animation-name: toast-fade;
+  animation-duration: 3.2s; /* match the JS timeout (ANIMATION_MS) */
+  animation-timing-function: ease;
+  animation-fill-mode: forwards;
+}

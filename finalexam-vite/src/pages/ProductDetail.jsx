@@ -21,17 +21,11 @@ function proxyImage(url) {
 
 export default function ProductDetail({
   products = [],
-  cart = {},
-  onAddToCart = () => {},
-  onIncrement = () => {},
-  onDecrement = () => {},
-  onRemoveProduct = () => {},
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const product = useMemo(() => products.find((p) => p.id === id), [products, id]);
-  const inCart = Boolean(cart && product && cart[product.id]);
 
   if (!product) {
     return (
@@ -78,31 +72,6 @@ export default function ProductDetail({
           ) : (
             product.quantity < 5 && <div className="badge" style={{ marginTop: 8 }}>Low Stock</div>
           )}
-
-          <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
-            <button
-              className={`btn ${inCart ? 'btn-added' : 'btn-primary'}`}
-              onClick={() => onAddToCart(product.id)}
-              disabled={outOfStock}
-              aria-pressed={inCart}
-            >
-              {outOfStock ? 'Out of stock' : inCart ? 'Added to Cart' : 'Add to Cart'}
-            </button>
-
-            <button onClick={() => onIncrement(product.id)} disabled={outOfStock} className="small-btn">+</button>
-            <button onClick={() => onDecrement(product.id)} disabled={outOfStock} className="small-btn">-</button>
-
-            <button
-              className="remove"
-              onClick={() => {
-                onRemoveProduct(product.id);
-                navigate('/');
-              }}
-              style={{ marginLeft: 12 }}
-            >
-              Remove Product
-            </button>
-          </div>
 
           <div style={{ marginTop: 18 }}>
             <h4 style={{ marginBottom: 8 }}>Description</h4>

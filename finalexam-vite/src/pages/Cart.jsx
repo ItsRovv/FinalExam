@@ -1,5 +1,5 @@
 // src/pages/Cart.jsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
@@ -10,6 +10,7 @@ const currencyFormatter = new Intl.NumberFormat('en-PH', {
 
 export default function Cart({ products = [], cart = {}, onRemoveFromCart = () => {} }) {
   const navigate = useNavigate();
+  const [showToast, setShowToast] = useState(false);
 
   const items = useMemo(() => {
     return Object.entries(cart)
@@ -31,13 +32,38 @@ export default function Cart({ products = [], cart = {}, onRemoveFromCart = () =
 
   const total = items.reduce((sum, it) => sum + it.subtotal, 0);
 
+  const handleCheckout = () => {
+    if (items.length === 0) return;
+
+    // Show toast with fade in/out animation
+    setShowToast(true);
+
+    // Match this timeout to the CSS animation duration (in ms)
+    const ANIMATION_MS = 3200;
+    setTimeout(() => setShowToast(false), ANIMATION_MS);
+
+    // Optional: clear cart or trigger further checkout logic here
+  };
+
   return (
     <section>
+      {/* Toast notification */}
+      {showToast && (
+        <div className="toast toast-success toast-animate" role="status" aria-live="polite">
+          On the Way, and will be delivered!
+        </div>
+      )}
+
       <div className="cart-header">
         <h2 style={{ color: 'white' }}>Your Cart</h2>
         <div className="cart-header-actions">
           <button className="btn btn-secondary" onClick={() => navigate(-1)}>← Back</button>
-          <button className="btn btn-checkout" onClick={() => alert('Proceed to checkout flow')}>
+          <button
+            className="btn btn-checkout"
+            onClick={handleCheckout}
+            disabled={items.length === 0}
+            aria-disabled={items.length === 0}
+          >
             Check Out
           </button>
         </div>
@@ -51,7 +77,12 @@ export default function Cart({ products = [], cart = {}, onRemoveFromCart = () =
             <div key={it.id} className="cart-row">
               <div className="cart-left">
                 <div className="cart-thumb-frame">
-                  <img src={it.image} alt={it.name} className="cart-thumb" onError={(e) => { e.currentTarget.src = '/images/fallback.png'; }} />
+                  <img
+                    src={it.image}
+                    alt={it.name}
+                    className="cart-thumb"
+                    onError={(e) => { e.currentTarget.src = '/images/fallback.png'; }}
+                  />
                 </div>
                 <div className="cart-meta">
                   <div className="cart-name">{it.name}</div>
@@ -62,14 +93,13 @@ export default function Cart({ products = [], cart = {}, onRemoveFromCart = () =
               <div className="cart-qty">x{it.qty}</div>
               <div className="cart-subtotal">{currencyFormatter.format(it.subtotal)}</div>
 
-              {/* Remove button under each product */}
               <div className="cart-actions">
                 <button
                   className="btn cart-remove"
                   onClick={() => onRemoveFromCart(it.id)}
                   aria-label={`Remove ${it.name} from cart`}
                 >
-                  Remove Product
+                  Remove Item
                 </button>
               </div>
             </div>
