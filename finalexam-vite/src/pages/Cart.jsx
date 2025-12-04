@@ -8,7 +8,7 @@ const currencyFormatter = new Intl.NumberFormat('en-PH', {
   maximumFractionDigits: 2,
 });
 
-export default function Cart({ products = [], cart = {}, onRemoveFromCart = () => {} }) {
+export default function Cart({ products = [], cart = {}, onRemoveFromCart = () => {}, onCheckout = () => ({ success: false }) }) {
   const navigate = useNavigate();
   const [showToast, setShowToast] = useState(false);
 
@@ -32,17 +32,22 @@ export default function Cart({ products = [], cart = {}, onRemoveFromCart = () =
 
   const total = items.reduce((sum, it) => sum + it.subtotal, 0);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (items.length === 0) return;
 
-    // Show toast with fade in/out animation
-    setShowToast(true);
-
-    // Match this timeout to the CSS animation duration (in ms)
-    const ANIMATION_MS = 3200;
-    setTimeout(() => setShowToast(false), ANIMATION_MS);
-
-    // Optional: clear cart or trigger further checkout logic here
+    // Call the App-level checkout handler which validates and updates stock
+    const result = onCheckout();
+    // onCheckout returns an object { success: boolean, message?: string }
+    if (result && result.success) {
+      // Show toast notification on success
+      setShowToast(true);
+      const ANIMATION_MS = 3200;
+      setTimeout(() => setShowToast(false), ANIMATION_MS);
+    } else {
+      // Show error message
+      const msg = (result && result.message) || 'Checkout failed.';
+      alert(msg);
+    }
   };
 
   return (
@@ -97,9 +102,9 @@ export default function Cart({ products = [], cart = {}, onRemoveFromCart = () =
                 <button
                   className="btn cart-remove"
                   onClick={() => onRemoveFromCart(it.id)}
-                  aria-label={`Remove ${it.name} from cart`}
+                  aria-label={`Remove item ${it.name} from cart`}
                 >
-                  Remove Item
+                  Remove item
                 </button>
               </div>
             </div>

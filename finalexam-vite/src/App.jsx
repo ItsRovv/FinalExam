@@ -31,23 +31,57 @@ export default function App() {
     );
   };
 
-  const addToCart = (id) => {
-  const product = products.find((p) => p.id === id);
-  if (!product) return;
-  if (product.quantity === 0) {
-    // optional: show a toast or console message
-    console.warn('Cannot add to cart: product is out of stock', id);
-    return;
-  }
-  setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-};
+  // Add to cart: only updates cart (stock is NOT decremented here)
+  const addToCart = (id, qty = 1) => {
+    if (qty <= 0) return;
+    const product = products.find((p) => p.id === id);
+    if (!product) return;
+    // Do not change product.quantity here — stock will be adjusted on checkout
+    setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + qty }));
+  };
 
+  // Remove item from cart (no stock restoration here because stock wasn't decremented on add)
   const removeFromCart = (id) => {
     setCart((prev) => {
       const copy = { ...prev };
       delete copy[id];
       return copy;
     });
+  };
+
+  // Checkout: validate stock, decrement stock, clear cart
+  const handleCheckout = () => {
+    const entries = Object.entries(cart).filter(([, qty]) => qty > 0);
+    if (entries.length === 0) {
+      return { success: false, message: 'Cart is empty.' };
+    }
+
+    // Validate stock availability
+    for (const [id, qty] of entries) {
+      const product = products.find((p) => p.id === id);
+      if (!product) {
+        return { success: false, message: `Product ${id} not found.` };
+      }
+      if (product.quantity < qty) {
+        return { success: false, message: `Not enough stock for ${product.name}. Available: ${product.quantity}` };
+      }
+    }
+
+    // All good — decrement stock
+    setProducts((prev) =>
+      prev.map((p) => {
+        const qtyInCart = cart[p.id] || 0;
+        if (qtyInCart > 0) {
+          return { ...p, quantity: Math.max(0, p.quantity - qtyInCart) };
+        }
+        return p;
+      })
+    );
+
+    // Clear cart
+    setCart({});
+
+    return { success: true };
   };
 
   const onAddProduct = (newProduct) => {
@@ -89,7 +123,7 @@ export default function App() {
                   cart={cart}
                   onIncrement={(id) => updateProductQuantity(id, +1)}
                   onDecrement={(id) => updateProductQuantity(id, -1)}
-                  onAddToCart={addToCart}
+                  onAddToCart={addToCart} // still accepts (id, qty)
                   onRemoveProduct={removeProduct}
                 />
                 <div className="totals-bar">
@@ -116,7 +150,7 @@ export default function App() {
 
           <Route
             path="/cart"
-            element={<Cart products={products} cart={cart} onRemoveFromCart={removeFromCart} />}
+            element={<Cart products={products} cart={cart} onRemoveFromCart={removeFromCart} onCheckout={handleCheckout} />}
           />
 
           <Route path="*" element={<div style={{ color: 'white' }}>Page not found</div>} />

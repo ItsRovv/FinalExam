@@ -681,3 +681,89 @@ button[disabled] {
   animation-timing-function: ease;
   animation-fill-mode: forwards;
 }
+/* Toast animation: fade in, hold, fade out */
+@keyframes toast-fade {
+  0%   { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  10%  { opacity: 1; transform: translateY(0) scale(1); }
+  85%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-6px) scale(0.98); }
+}
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  min-width: 220px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: #0b0b0b;
+  font-weight: 700;
+  z-index: 1200;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  transform-origin: top right;
+}
+
+.toast-success {
+  background: linear-gradient(180deg, #fef3d7 0%, #fde68a 100%);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.toast-animate {
+  animation-name: toast-fade;
+  animation-duration: 3.2s;
+  animation-timing-function: ease;
+  animation-fill-mode: forwards;
+}
+/* Stable badge sizing and layout */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 84px;        /* fixed minimum width so layout doesn't jump */
+  max-width: 140px;       /* prevents extremely long text from expanding card */
+  height: 28px;           /* fixed height */
+  padding: 0 10px;        /* horizontal padding only */
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;        /* small, consistent text size */
+  line-height: 1;         /* keeps vertical centering stable */
+  white-space: nowrap;    /* prevent wrapping that changes height */
+  overflow: hidden;       /* hide overflow instead of expanding layout */
+  text-overflow: ellipsis;/* show ellipsis for long text */
+  vertical-align: middle;
+}
+
+/* Visual styles */
+.badge {
+  color: #1b1b1b;
+  background: #fde68a;
+}
+
+/* Low stock variant (if you use a separate class) */
+.badge.low-stock {
+  background: #fde68a;
+  color: #1b1b1b;
+}
+
+/* Out of stock variant */
+.badge.out {
+  background: linear-gradient(180deg, #f8d7da 0%, #f1aeb3 100%);
+  color: #3b0b0b;
+}
+
+/* Make sure disabled controls remain visually consistent */
+.small-btn:disabled,
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Optional: subtle scale on hover without affecting layout */
+.badge:hover {
+  transform: scale(1.03);
+  transition: transform 120ms ease;
+}
+

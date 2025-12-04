@@ -19,9 +19,7 @@ function proxyImage(url) {
   }
 }
 
-export default function ProductDetail({
-  products = [],
-}) {
+export default function ProductDetail({ products = [] }) {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -65,7 +63,9 @@ export default function ProductDetail({
         <div>
           <p className="muted">Category: {product.category}</p>
           <p style={{ fontSize: 18, marginTop: 6 }}>{currencyFormatter.format(product.price)}</p>
-          <p style={{ marginTop: 8 }}>Quantity available: {product.quantity}</p>
+
+          {/* Stock label (replaces "Quantity available") */}
+          <p style={{ marginTop: 8 }}><strong>Stock:</strong> {product.quantity}</p>
 
           {outOfStock ? (
             <div className="badge out" style={{ marginTop: 8 }}>Out of stock</div>
