@@ -3,7 +3,7 @@
   --card: #111827;
   --text: #e5e7eb;
   --muted: #9ca3af;
-  --accent: #f59e0b; /* warm gold for Rovin's preference */
+  --accent: #ffffff; /* warm gold for Rovin's preference */
   --danger: #ef4444;
   --ok: #10b981;
 }
@@ -20,14 +20,14 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: linear-gradient(90deg, #f7b500, #ffd84d);
+  background: linear-gradient(90deg, #ff5100, #a82323);
   color: #1f2937;
 }
 
 .logo {
   font-weight: 700;
   text-decoration: none;
-  color: #1f2937;
+  color: #ffffff;
 }
 
 .nav a {
@@ -44,8 +44,8 @@ body {
 }
 
 .totals {
-  background: #0b1220;
-  border: 1px solid #1f2937;
+  background: #ffffff;
+  border: 1px solid #ffffff;
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 16px;
