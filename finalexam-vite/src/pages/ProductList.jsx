@@ -9,15 +9,12 @@ const currencyFormatter = new Intl.NumberFormat('en-PH', {
   maximumFractionDigits: 2,
 });
 
+// NEW — simpler, handles missing images gracefully
 function proxyImage(url) {
-  if (!url) return '/images/fallback.png';
-  try {
-    if (url.startsWith('https://')) return url;
-    const clean = url.replace(/^https?:\/\//, '');
-    return `https://images.weserv.nl/?url=${encodeURIComponent(clean)}`;
-  } catch {
-    return '/images/fallback.png';
+  if (!url || typeof url !== 'string' || !url.startsWith('http')) {
+    return null; // let onError handle it
   }
+  return url;
 }
 
 export default function ProductList({
@@ -110,8 +107,11 @@ export default function ProductList({
                   src={proxyImage(p.image)}
                   alt={p.name}
                   className="thumb-img hover-zoom"
+                  // NEW
                   onError={(e) => {
-                    e.currentTarget.src = '/images/fallback.png';
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.style.display = 'none'; // hide broken img
+                    e.currentTarget.parentElement.style.background = '#2a2d3e'; // show bg color
                   }}
                 />
               </div>

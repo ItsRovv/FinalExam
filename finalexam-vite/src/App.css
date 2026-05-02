@@ -767,3 +767,22 @@ button[disabled] {
   transition: transform 120ms ease;
 }
 
+/* Add to src/App.css */
+
+/* subtle card hover used by product list */
+.product-card-global {
+  transition: transform 220ms cubic-bezier(.2,.9,.3,1), box-shadow 220ms;
+}
+.product-card-global:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 30px rgba(2,6,23,0.08);
+}
+
+/* nav link hover */
+.app-header .nav a {
+  transition: color 180ms, transform 180ms;
+}
+.app-header .nav a:hover {
+  color: #0b5fff;
+  transform: translateY(-2px);
+}
