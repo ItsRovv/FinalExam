@@ -1,0 +1,62 @@
+[
+  {
+    "id": "p-iphone-15-pro",
+    "name": "Apple iPhone 15 Pro",
+    "category": "Phones",
+    "description": "6.1-inch display, A17 Pro chip, 256GB storage, 48MP camera",
+    "image": "https://cdn.dummyjson.com/products/images/smartphones/iPhone%2015%20Pro/1.png",
+    "specs": { "ram": "8GB", "storage": "256GB", "color": "Graphite" },
+    "price": 69999,
+    "currency": "PHP",
+    "quantity": 5,
+    "short": "iPhone 15 Pro — 256GB — ₱69,999"
+  },
+  {
+    "id": "p-samsung-s24",
+    "name": "Samsung Galaxy S24",
+    "category": "Phones",
+    "description": "6.2-inch AMOLED, Snapdragon, 128GB storage, 50MP camera",
+    "image": "https://cdn.dummyjson.com/products/images/smartphones/Samsung%20Galaxy%20S24%20Ultra/1.png",
+    "specs": { "ram": "8GB", "storage": "128GB", "color": "Phantom Black" },
+    "price": 49999,
+    "currency": "PHP",
+    "quantity": 12,
+    "short": "Samsung Galaxy S24 — 128GB — ₱49,999"
+  },
+  {
+    "id": "p-google-pixel-8",
+    "name": "Google Pixel 8",
+    "category": "Phones",
+    "description": "6.2-inch OLED, Google Tensor G3, 128GB storage, excellent camera",
+    "image": "https://cdn.dummyjson.com/products/images/smartphones/Google%20Pixel%208/1.png",
+    "specs": { "ram": "8GB", "storage": "128GB", "color": "Obsidian" },
+    "price": 39999,
+    "currency": "PHP",
+    "quantity": 8,
+    "short": "Google Pixel 8 — 128GB — ₱39,999"
+  },
+  {
+    "id": "p-asus-rog-15",
+    "name": "ASUS ROG Strix G15",
+    "category": "Laptops",
+    "description": "High-end gaming laptop, RTX GPU, 16GB RAM, 1TB SSD",
+    "image": "https://cdn.dummyjson.com/products/images/laptops/Asus%20ROG%20Strix%20G15/1.png",
+    "specs": { "ram": "16GB", "storage": "1TB", "gpu": "RTX 4070" },
+    "price": 149999,
+    "currency": "PHP",
+    "quantity": 4,
+    "short": "ASUS ROG Strix G15 — RTX 4070 — ₱149,999"
+  },
+  {
+    "id": "p-samsung-s95d",
+    "name": "Samsung S95D OLED 65inch",
+    "category": "Electronics",
+    "description": "Ultra premium 65-inch OLED TV with HDR and smart features",
+    "image": "https://cdn.dummyjson.com/products/images/mobile-accessories/Apple%20AirPods%20Max%20Silver/1.png",
+    "specs": { "size": "65inch", "type": "OLED" },
+    "price": 199999.99,
+    "currency": "PHP",
+    "quantity": 12,
+    "short": "Samsung S95D OLED 65inch — ₱199,999.99"
+  }
+]
