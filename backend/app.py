@@ -1,7 +1,5 @@
 """
-backend/app.py
-Flask AI chat backend with product-aware RAG and streaming SSE.
-Requires: flask flask-cors anthropic python-dotenv
+backend/app.py - Final Stable Version
 """
 
 from flask import Flask, request, jsonify, Response, stream_with_context
@@ -11,14 +9,12 @@ import json
 import os
 import re
 from dotenv import load_dotenv
-import anthropic
+from groq import Groq
 
-load_dotenv()
+load_dotenv(Path(__file__).parent / ".env")
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173", "http://localhost:3000"])  # Vite / CRA
-
-# ── Product catalogue ────────────────────────────────────────────────────────
+CORS(app, origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"])
 
 DATA_PATH = Path(__file__).parent / "products.json"
 PRODUCTS: list[dict] = (
@@ -26,131 +22,84 @@ PRODUCTS: list[dict] = (
 )
 
 def _products_snapshot() -> str:
-    """Render current in-memory products as a compact text block for the prompt."""
     if not PRODUCTS:
         return "No products available."
-    lines = []
-    for p in PRODUCTS:
-        stock = "In stock" if (p.get("quantity") or 0) > 0 else "Out of stock"
-        price = f"₱{p['price']:,.2f}" if p.get("price") is not None else "N/A"
-        lines.append(
-            f"• [{p['id']}] {p['name']} | {p.get('category','—')} | {price} | "
-            f"Stock: {p.get('quantity', 0)} | {stock}\n"
-            f"  {p.get('description','')}"
-        )
+    lines = [f"• [{p['id']}] {p['name']} | {p.get('category','—')} | ₱{p['price']:,.2f} | Stock: {p.get('quantity', 0)}" 
+             for p in PRODUCTS]
     return "\n".join(lines)
 
+def _cart_snapshot(cart: dict) -> str:
+    if not cart:
+        return "(empty)"
+    lines = []
+    for pid, qty in cart.items():
+        product = next((p for p in PRODUCTS if p['id'] == pid), None)
+        name = product['name'] if product else pid
+        lines.append(f"• [{pid}] {name} (qty: {qty})")
+    return "\n".join(lines) if lines else "(empty)"
 
-# ── System prompt ────────────────────────────────────────────────────────────
-
+# Very Strict System Prompt
 SYSTEM_TEMPLATE = """\
-You are a helpful shopping assistant for a product store. \
-You help customers find products, answer questions about specs and availability, \
-and assist with their cart.
+You are a friendly shopping assistant for Group 1 Shop.
 
-Current product catalogue:
+Current products:
 {catalogue}
 
-Guidelines:
-- Be concise and friendly.
-- When recommending or referencing a product, always include its id in the format [id:p-xxx] \
-  so the frontend can create a clickable link. Example: "Check out the iPhone 15 Pro [id:p-iphone-15-pro]".
-- When a user wants to add something to their cart, confirm and include \
-  [action:add_to_cart:PRODUCT_ID:QTY] in your reply. Example: [action:add_to_cart:p-iphone-15-pro:1].
-- Never invent products that aren't in the catalogue.
-- If a product is out of stock, say so clearly.
-- Prices are in Philippine Pesos (₱).
+Current cart:
+{cart_contents}
+
+RULES YOU MUST OBEY:
+- Speak naturally and shortly.
+- For ADD requests: respond naturally, then at the VERY END output one ADD_TO_CART tag per product.
+- For REMOVE requests: respond naturally, then at the VERY END output one REMOVE_FROM_CART tag per product.
+- NEVER output ADD_TO_CART for a remove request.
+- NEVER output REMOVE_FROM_CART for an add request.
+- If removing/adding multiple products, output one tag per product, each on its own line at the very end.
+- If the user says "remove all", "remove everything", "clear cart", "remove them all", "remove all of them", output REMOVE_FROM_CART for EVERY product currently in the cart.
+- Do NOT write anything after the action tags.
+
+Example (add one):
+I've added the ASUS ROG STRIX G17 to your cart.
+
+ADD_TO_CART:p-100:1
+
+Example (remove one):
+I've removed the HP Omen GT-50 Gaming PC from your cart.
+
+REMOVE_FROM_CART:p-2
+
+Example (remove multiple):
+I've removed both items from your cart.
+
+REMOVE_FROM_CART:p-2
+REMOVE_FROM_CART:p-5
+
+Example (add multiple):
+I've added both items to your cart.
+
+ADD_TO_CART:p-100:1
+ADD_TO_CART:p-5:1
 """
 
-def build_system_prompt() -> str:
-    return SYSTEM_TEMPLATE.format(catalogue=_products_snapshot())
+def build_system_prompt(cart: dict = None) -> str:
+    return SYSTEM_TEMPLATE.format(
+        catalogue=_products_snapshot(),
+        cart_contents=_cart_snapshot(cart or {})
+    )
 
-
-# ── Anthropic client ─────────────────────────────────────────────────────────
-
-_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-MODEL = "claude-sonnet-4-20250514"
-
-
-# ── Routes ───────────────────────────────────────────────────────────────────
+_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+MODEL = "llama-3.1-8b-instant"
 
 @app.route("/api/products", methods=["GET"])
 def get_products():
     return jsonify(PRODUCTS)
 
-
-@app.route("/api/products/<product_id>/quantity", methods=["PATCH"])
-def update_quantity(product_id: str):
-    """
-    Let the frontend sync quantity changes back to the server.
-    Body: { "delta": 1 }  or  { "quantity": 5 }
-    """
-    body = request.get_json(silent=True) or {}
-    for p in PRODUCTS:
-        if p["id"] == product_id:
-            if "quantity" in body:
-                p["quantity"] = max(0, int(body["quantity"]))
-            elif "delta" in body:
-                p["quantity"] = max(0, (p.get("quantity") or 0) + int(body["delta"]))
-            else:
-                return jsonify({"error": "Provide 'quantity' or 'delta'"}), 400
-            return jsonify(p)
-    return jsonify({"error": "Product not found"}), 404
-
-
-@app.route("/api/chat", methods=["POST"])
-def chat():
-    """
-    Non-streaming chat endpoint (easier to start with).
-    Body: { "message": "...", "history": [{"role":"user"|"assistant","content":"..."}] }
-    Returns: { "reply": "...", "actions": [...] }
-    """
-    body = request.get_json(silent=True) or {}
-    user_message: str = (body.get("message") or "").strip()
-    history: list[dict] = body.get("history") or []
-
-    if not user_message:
-        return jsonify({"error": "message is required"}), 400
-
-    # Build messages array: history + new user turn
-    messages = [
-        {"role": m["role"], "content": m["content"]}
-        for m in history
-        if m.get("role") in ("user", "assistant") and m.get("content")
-    ]
-    messages.append({"role": "user", "content": user_message})
-
-    try:
-        response = _client.messages.create(
-            model=MODEL,
-            max_tokens=1024,
-            system=build_system_prompt(),
-            messages=messages,
-        )
-        reply_text: str = response.content[0].text
-    except anthropic.APIError as e:
-        return jsonify({"error": str(e)}), 502
-
-    # Parse action tags out of the reply
-    actions = _parse_actions(reply_text)
-    clean_reply = _strip_action_tags(reply_text)
-
-    return jsonify({"reply": clean_reply, "actions": actions})
-
-
 @app.route("/api/chat/stream", methods=["POST"])
 def chat_stream():
-    """
-    Streaming SSE endpoint.
-    Body: same as /api/chat
-    Emits:
-      data: {"type":"delta","text":"..."}
-      data: {"type":"done","actions":[...]}
-      data: {"type":"error","message":"..."}
-    """
     body = request.get_json(silent=True) or {}
-    user_message: str = (body.get("message") or "").strip()
-    history: list[dict] = body.get("history") or []
+    user_message = (body.get("message") or "").strip()
+    history = body.get("history") or []
+    cart = body.get("cart") or {}
 
     if not user_message:
         return jsonify({"error": "message is required"}), 400
@@ -165,71 +114,80 @@ def chat_stream():
     def generate():
         full_text = ""
         try:
-            with _client.messages.stream(
+            stream = _client.chat.completions.create(
                 model=MODEL,
                 max_tokens=1024,
-                system=build_system_prompt(),
-                messages=messages,
-            ) as stream:
-                for text_chunk in stream.text_stream:
-                    full_text += text_chunk
-                    yield _sse({"type": "delta", "text": text_chunk})
+                temperature=0.6,          # Lower temperature = more consistent
+                messages=[{"role": "system", "content": build_system_prompt(cart)}] + messages,
+                stream=True,
+            )
 
-            # After stream ends, parse actions and send done event
+            for chunk in stream:
+                delta = chunk.choices[0].delta.content or ""
+                if delta:
+                    full_text += delta
+                    yield _sse({"type": "delta", "text": delta})
+
             actions = _parse_actions(full_text)
-            clean = _strip_action_tags(full_text)
+            clean = _clean_reply(full_text)
             yield _sse({"type": "done", "actions": actions, "fullText": clean})
 
-        except anthropic.APIError as e:
-            yield _sse({"type": "error", "message": str(e)})
+        except Exception as e:
+            error_msg = str(e)
+            print("🚨 Groq Error:", error_msg)
+            yield _sse({"type": "error", "message": "Sorry, I'm having trouble right now. Please try again."})
 
-    return Response(
-        stream_with_context(generate()),
-        mimetype="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",  # nginx: disable proxy buffering
-        },
-    )
+    return Response(stream_with_context(generate()), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
-
-# ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _sse(data: dict) -> str:
     return f"data: {json.dumps(data)}\n\n"
 
 
-# Matches: [action:add_to_cart:p-iphone-15-pro:1]
-_ACTION_RE = re.compile(r"\[action:([^\]]+)\]")
-# Matches: [id:p-xxx]
-_ID_TAG_RE = re.compile(r"\[id:([\w-]+)\]")
-
+_ADD_TO_CART_RE = re.compile(r"ADD_TO_CART:([\w-]+):(\d+)", re.IGNORECASE)
+_REMOVE_FROM_CART_RE = re.compile(r"REMOVE_FROM_CART:([\w-]+)", re.IGNORECASE)
 
 def _parse_actions(text: str) -> list[dict]:
     actions = []
-    for match in _ACTION_RE.finditer(text):
-        parts = match.group(1).split(":")
-        if len(parts) >= 2:
-            action_type = parts[0]
-            if action_type == "add_to_cart" and len(parts) >= 3:
-                try:
-                    qty = int(parts[3]) if len(parts) > 3 else 1
-                except ValueError:
-                    qty = 1
-                actions.append({
-                    "type": "add_to_cart",
-                    "productId": parts[2],
-                    "quantity": qty,
-                })
+    seen = set()
+
+    for match in _ADD_TO_CART_RE.finditer(text):
+        pid = match.group(1)
+        try:
+            qty = int(match.group(2))
+        except:
+            qty = 1
+        key = ("add", pid)
+        if key not in seen:
+            seen.add(key)
+            actions.append({"type": "add_to_cart", "productId": pid, "quantity": qty})
+
+    for match in _REMOVE_FROM_CART_RE.finditer(text):
+        pid = match.group(1)
+        key = ("remove", pid)
+        if key not in seen:
+            seen.add(key)
+            actions.append({"type": "remove_from_cart", "productId": pid})
+
+    # Conflict resolution: if same product has both add and remove, keep only remove
+    remove_pids = {a["productId"] for a in actions if a["type"] == "remove_from_cart"}
+    actions = [a for a in actions if not (a["type"] == "add_to_cart" and a["productId"] in remove_pids)]
+
     return actions
 
 
-def _strip_action_tags(text: str) -> str:
-    """Remove action tags but keep id tags (frontend renders them as links)."""
-    return _ACTION_RE.sub("", text).strip()
+def _clean_reply(text: str) -> str:
+    text = _ADD_TO_CART_RE.sub("", text)
+    text = _REMOVE_FROM_CART_RE.sub("", text)
+    text = re.sub(r"ADD_TO_CART:[\w-]+:\d+", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"REMOVE_FROM_CART:[\w-]+", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\[.*?\]", "", text)
+    
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return "\n".join(lines).strip()
 
-
-# ── Entry point ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    print("🚀 Server running - llama-3.1-8b-instant")
     app.run(port=5000, debug=True)
