@@ -5,10 +5,11 @@ import { sendMessageStream } from "../api/chat";
 
 function cleanText(text) {
   return text
-    .replace(/ADD_TO_CART:[\w-]+:\d+/gi, "")
+    .replace(/ADD_TO_CART:[\w-]+(?::\d+)?/gi, "")
     .replace(/REMOVE_FROM_CART:[\w-]+/gi, "")
+    .replace(/^CHECKOUT$/gim, "")
     .replace(/PRODUCT_REF:[\w-]+/gi, "")
-    .replace(/\[(action|id):[^\]]*\]/g, "")
+    .replace(/\[[\w-]+\]/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -37,8 +38,24 @@ const SUGGESTIONS = [
 function ActionNotification({ actions, products }) {
   if (!actions || actions.length === 0) return null;
 
-  const adds = actions.filter(a => a.type === 'add_to_cart');
+  const isCheckout = actions.some(a => a.type === 'checkout');
+  const adds = actions.filter(a => a.type === 'add_to_cart' && products.find(x => x.id === a.productId));
   const removes = actions.filter(a => a.type === 'remove_from_cart');
+
+  if (isCheckout) {
+    return (
+      <div className="chat-msg" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 10 }}>
+        <div style={{
+          background: 'rgba(0,229,160,0.08)', border: '1px solid rgba(0,229,160,0.25)',
+          borderRadius: 12, padding: '10px 13px', fontSize: 12.5, maxWidth: '90%',
+        }}>
+          <div style={{ fontWeight: 700, color: '#00e5a0', fontSize: 13, letterSpacing: 0.3 }}>
+            🎉 Checked out! Your order has been placed.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="chat-msg" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 10 }}>
@@ -148,7 +165,7 @@ function CategoryRedirect({ category, onRedirect }) {
 
 const TOOLTIP_MESSAGES = ["Need Assistance?", "Try me now!", "Ask me anything!"];
 
-export default function ChatWidget({ products = [], cart = {}, onAddToCart, onRemoveFromCart, onSetCategory }) {
+export default function ChatWidget({ products = [], cart = {}, onAddToCart, onRemoveFromCart, onSetCategory, onCheckout }) {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -204,6 +221,7 @@ export default function ChatWidget({ products = [], cart = {}, onAddToCart, onRe
     const text = (overrideText || input).trim();
     if (!text || loading) return;
 
+    setHasInteracted(true);
     setInput("");
     setPendingCategory(null);
     const placeholderId = Date.now().toString();
@@ -235,18 +253,26 @@ export default function ChatWidget({ products = [], cart = {}, onAddToCart, onRe
           const cleaned = cleanText(fullText);
 
           // Execute cart actions
-          const processedActions = new Set();
-          actions.forEach(a => {
-            if (a.type === 'add_to_cart') {
-              const key = a.productId;
-              if (processedActions.has(key)) return;
-              processedActions.add(key);
-              onAddToCart?.(a.productId, a.quantity || 1);
-            }
-            if (a.type === 'remove_from_cart') {
-              onRemoveFromCart?.(a.productId);
-            }
-          });
+          if (actions.some(a => a.type === 'checkout')) {
+            const pendingAdds = {};
+            actions.filter(a => a.type === 'add_to_cart').forEach(a => {
+              pendingAdds[a.productId] = (pendingAdds[a.productId] || 0) + (a.quantity || 1);
+            });
+            onCheckout?.(pendingAdds);
+          } else {
+            const processedActions = new Set();
+            actions.forEach(a => {
+              if (a.type === 'add_to_cart') {
+                const key = a.productId;
+                if (processedActions.has(key)) return;
+                processedActions.add(key);
+                onAddToCart?.(a.productId, a.quantity || 1);
+              }
+              if (a.type === 'remove_from_cart') {
+                onRemoveFromCart?.(a.productId);
+              }
+            });
+          }
 
           // Update messages and show notification
           setMessages(prev => {
@@ -269,7 +295,7 @@ export default function ChatWidget({ products = [], cart = {}, onAddToCart, onRe
 
       return nextMessages;
     });
-  }, [input, loading, onAddToCart, onRemoveFromCart]);
+  }, [input, loading, onAddToCart, onRemoveFromCart, onCheckout]);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -291,9 +317,10 @@ export default function ChatWidget({ products = [], cart = {}, onAddToCart, onRe
     clearTimeout(promptDismissTimerRef.current);
     setShowReopenPrompt(false);
     reopenTimerRef.current = setTimeout(() => {
+      setHasInteracted(false);
       setShowReopenPrompt(true);
       promptDismissTimerRef.current = setTimeout(() => setShowReopenPrompt(false), 8000);
-    }, 12000);
+    }, 10000);
   };
 
   const handleBubbleClick = () => {
@@ -301,7 +328,6 @@ export default function ChatWidget({ products = [], cart = {}, onAddToCart, onRe
       clearTimeout(reopenTimerRef.current);
       clearTimeout(promptDismissTimerRef.current);
       setShowReopenPrompt(false);
-      if (!hasInteracted) setHasInteracted(true);
     } else {
       startReopenTimer();
     }
@@ -364,7 +390,7 @@ export default function ChatWidget({ products = [], cart = {}, onAddToCart, onRe
               color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer',
               fontFamily: 'Outfit, sans-serif',
             }}>Yes</button>
-            <button onClick={() => { setShowReopenPrompt(false); setHasInteracted(false); setIsReopened(true); handleClear(); }} style={{
+            <button onClick={() => { setShowReopenPrompt(false); setHasInteracted(false); setIsReopened(false); handleClear(); }} style={{
               flex: 1, background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: 8, padding: '7px 0',

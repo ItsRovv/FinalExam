@@ -1,0 +1,40 @@
+[
+  {
+    "id": "ORD-8E7558BD",
+    "items": [
+      {
+        "productId": "p-97",
+        "name": "Samsung S95D OLED 65\" (2025)",
+        "image": "https://images.samsung.com/is/image/samsung/p6pim/uk/qe65s95datxxu/gallery/uk-oled-tv-qe65s95datxxu-qe--s--datxxu-541580251?$624_624_PNG$",
+        "price": 199999.99,
+        "currency": "PHP",
+        "quantity": 1,
+        "subtotal": 199999.99
+      }
+    ],
+    "total": 199999.99,
+    "currency": "PHP",
+    "status": "pending",
+    "customer": {},
+    "createdAt": "2026-05-21T12:34:35.275328+00:00"
+  },
+  {
+    "id": "ORD-BCE3B3DC",
+    "items": [
+      {
+        "productId": "p-97",
+        "name": "Samsung S95D OLED 65\" (2025)",
+        "image": "https://images.samsung.com/is/image/samsung/p6pim/uk/qe65s95datxxu/gallery/uk-oled-tv-qe65s95datxxu-qe--s--datxxu-541580251?$624_624_PNG$",
+        "price": 199999.99,
+        "currency": "PHP",
+        "quantity": 1,
+        "subtotal": 199999.99
+      }
+    ],
+    "total": 199999.99,
+    "currency": "PHP",
+    "status": "pending",
+    "customer": {},
+    "createdAt": "2026-05-21T12:34:44.281859+00:00"
+  }
+]

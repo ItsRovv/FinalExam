@@ -7,3 +7,4 @@ dist
 dist-ssr
 *.local
 .DS_Store
+error.log

@@ -47,8 +47,31 @@ function AddToCartBtn({ inCart, outOfStock, onClick }) {
   );
 }
 
+function SkeletonCard() {
+  return (
+    <article className="card" style={{ pointerEvents: 'none' }}>
+      <div className="thumb-frame" style={{
+        background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%)',
+        backgroundSize: '200% 100%',
+        animation: 'shimmer 1.4s ease-in-out infinite',
+      }} />
+      <div className="card-body">
+        {[120, 80, 60, 40].map((w, i) => (
+          <div key={i} style={{
+            height: 12, borderRadius: 6, marginBottom: 10,
+            width: `${w}%`,
+            background: 'rgba(255,255,255,0.07)',
+            animation: 'shimmer 1.4s ease-in-out infinite',
+            backgroundSize: '200% 100%',
+          }} />
+        ))}
+      </div>
+    </article>
+  );
+}
+
 export default function ProductList({
-  products = [], category = 'All', categories = [],
+  products = [], loading = false, category = 'All', categories = [],
   setCategory = () => {}, cart = {},
   onIncrement = () => {}, onDecrement = () => {},
   onAddToCart = () => {}, onRemoveProduct = () => {},
@@ -91,7 +114,13 @@ export default function ProductList({
         </div>
       </div>
 
-      <div className="grid">
+      {loading && (
+        <div className="grid">
+          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      )}
+
+      <div className="grid" style={{ display: loading ? 'none' : undefined }}>
         {filtered.map((p) => {
           const subtotal = p.price * p.quantity;
           const lowStock = p.quantity > 0 && p.quantity < 5;
@@ -181,7 +210,7 @@ export default function ProductList({
         })}
       </div>
 
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text2)' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
           <div style={{ fontSize: 16, fontWeight: 600 }}>No products in this category</div>

@@ -6,7 +6,7 @@ const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency', currency: 'PHP', maximumFractionDigits: 2,
 });
 
-export default function ProductDetail({ products = [], onAddToCart, onRemoveProduct }) {
+export default function ProductDetail({ products = [], onAddToCart, onIncrement, onDecrement, onRemoveProduct }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [qty, setQty] = useState(1);
@@ -127,6 +127,31 @@ export default function ProductDetail({ products = [], onAddToCart, onRemoveProd
           }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: stockColor, boxShadow: `0 0 6px ${stockColor}` }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: stockColor }}>{stockLabel}</span>
+          </div>
+
+          {/* Stock management */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            background: 'var(--surface)', border: '1px solid var(--border2)',
+            borderRadius: 12, padding: '12px 16px', marginBottom: 20,
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 1, flex: 1 }}>
+              Manage Stock
+            </span>
+            <button
+              className="small-btn"
+              onClick={() => onDecrement?.(product.id)}
+              disabled={product.quantity <= 0}
+              title="Remove 1 from stock"
+            >−</button>
+            <div style={{ minWidth: 40, textAlign: 'center', fontWeight: 800, fontSize: 16, color: stockColor }}>
+              {product.quantity}
+            </div>
+            <button
+              className="small-btn"
+              onClick={() => onIncrement?.(product.id)}
+              title="Add 1 to stock"
+            >+</button>
           </div>
 
           {/* Description */}
